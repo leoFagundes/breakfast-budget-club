@@ -39,15 +39,17 @@ export default function CardPage({ params }: any) {
   }, [id]);
 
   useEffect(() => {
-    async function loadUser() {
-      const uid = auth.currentUser?.uid;
-      if (!uid) return;
+    const unsub = auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        setCurrentUser(null);
+        return;
+      }
 
-      const user = await UserRepository.getById(uid);
-      setCurrentUser(user);
-    }
+      const loadedUser = await UserRepository.getById(user.uid);
+      setCurrentUser(loadedUser);
+    });
 
-    loadUser();
+    return () => unsub();
   }, []);
 
   const isGuest = currentUser?.role === "guest";
@@ -94,7 +96,6 @@ export default function CardPage({ params }: any) {
           </div>
         )}
       </div>
-
       <div className="bg-white p-2">
         {files.length === 0 ? (
           <p className="text-gray-500 mt-3">Nenhum arquivo enviado.</p>
