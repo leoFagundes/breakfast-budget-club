@@ -133,7 +133,7 @@ export default function Home() {
         className="flex flex-col items-center gap-3 p-4"
       >
         <h1 className="text-gray-600 font-semibold text-xl sm:text-4xl text-center">
-          Bem-vindo ao seu Clube de Café da Manhã Econômico!
+          Bem-vindo aos Clubes de Café da Manhã Econômico!
         </h1>
 
         <div className="relative w-full max-w-[600px] aspect-video my-6 shadow-card rounded-sm overflow-hidden">
