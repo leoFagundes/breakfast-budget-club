@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import AnimatedLogo from "@/components/animated-logo";
@@ -7,12 +8,56 @@ import { useEffect, useRef, useState } from "react";
 import { FaArrowRightFromBracket } from "react-icons/fa6";
 import { FiDownload } from "react-icons/fi";
 import { MdOutlineVideoLibrary } from "react-icons/md";
+import { CardType, CategoryType } from "./types";
+import CardRepository from "@/services/repositories/CardRepository";
+import CategoryRepository from "@/services/repositories/CategoryRepository";
+import * as Icons from "lucide-react";
+import { IconMap, normalizeIconName } from "@/utils/icons";
 
 export default function Home() {
+  const [cards, setCards] = useState<CardType[]>([]);
+  const [categories, setCategories] = useState<CategoryType[]>([]);
+  const [grouped, setGrouped] = useState<
+    { category: CategoryType; items: CardType[] }[]
+  >([]);
+
   const [welcomeVideoOpen, setWelcomeVideoOpen] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [ready, setReady] = useState(false);
+  useEffect(() => setReady(true), []);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  const ValidIcons = Object.fromEntries(
+    Object.entries(Icons).filter(([k, v]) => typeof v === "function")
+  ) as Record<string, React.ComponentType<any>>;
+
+  function getIcon(name?: string) {
+    if (!name) return null;
+
+    const normalized = normalizeIconName(name);
+    return IconMap[normalized] ?? null;
+  }
+  useEffect(() => {
+    async function load() {
+      const [cardList, categoryList] = await Promise.all([
+        CardRepository.getAll(),
+        CategoryRepository.getAll(),
+      ]);
+
+      setCards(cardList);
+      setCategories(categoryList);
+
+      const groupedResult = categoryList.map((cat) => ({
+        category: cat,
+        items: cardList.filter((c) => c.categoryId === cat.id),
+      }));
+
+      setGrouped(groupedResult);
+    }
+
+    load();
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -23,9 +68,7 @@ export default function Home() {
 
   useEffect(() => {
     if (playing && videoRef.current) {
-      videoRef.current.play().catch(() => {
-        // Pode falhar se o navegador bloquear autoplay com som (mas você tem muted)
-      });
+      videoRef.current.play().catch(() => {});
     }
   }, [playing]);
 
@@ -56,9 +99,35 @@ export default function Home() {
     };
   }, []);
 
+  function CategorySection({
+    title,
+    children,
+    icon,
+  }: {
+    title: string;
+    children: React.ReactNode;
+    icon: React.ReactNode;
+  }) {
+    return (
+      <>
+        <div className="relative flex justify-center items-center my-4">
+          <div className="h-[1px] w-full border-t border-dashed border-gray-600/50" />
+          <span className="flex items-center gap-2 absolute bg-white rounded py-1 px-2 text-gray-600 font-semibold">
+            {icon} {title}
+          </span>
+        </div>
+
+        <div className="flex flex-wrap justify-center gap-x-4 gap-y-10">
+          {children}
+        </div>
+      </>
+    );
+  }
+
   return (
     <div className="w-full flex flex-col items-center p-4 mb-8">
       <AnimatedLogo />
+
       <section
         id="hero-container"
         className="flex flex-col items-center gap-3 p-4"
@@ -66,16 +135,6 @@ export default function Home() {
         <h1 className="text-gray-600 font-semibold text-xl sm:text-4xl text-center">
           Bem-vindo ao seu Clube de Café da Manhã Econômico!
         </h1>
-        {/* <div className="relative w-full max-w-[600px] aspect-video my-6 shadow-card rounded-sm">
-          <iframe
-            src="https://www.youtube.com/embed/_ajmV4cogg4?si=RFQQBBQ7dHiYcGFH"
-            title="YouTube video player"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            referrerPolicy="strict-origin-when-cross-origin"
-            allowFullScreen
-            className="absolute top-0 left-0 w-full h-full rounded-sm"
-          ></iframe>
-        </div> */}
 
         <div className="relative w-full max-w-[600px] aspect-video my-6 shadow-card rounded-sm overflow-hidden">
           <video
@@ -91,6 +150,40 @@ export default function Home() {
             onContextMenu={(e) => e.preventDefault()}
           />
         </div>
+
+        <div className="w-full flex flex-col gap-8 max-w-[80%]">
+          {grouped
+            .filter(({ items }) => items.length > 0)
+            .map(({ category, items }) => {
+              const Icon = ready ? getIcon(category.iconName) : null;
+
+              return (
+                <CategorySection
+                  key={category.id}
+                  title={category.name}
+                  icon={Icon ? <Icon size={18} /> : null}
+                >
+                  {items.map((card) => (
+                    <Card
+                      key={card.id}
+                      srcTitle={card.actionLabel}
+                      title={card.title}
+                      src={card.actionUrl}
+                      icon={<FaArrowRightFromBracket />}
+                      onClick={() => {
+                        if (card.internalPage) {
+                          window.location.href = `/cards/${card.id}`;
+                        } else if (card.actionUrl) {
+                          window.open(card.actionUrl, "_blank");
+                        }
+                      }}
+                    />
+                  ))}
+                </CategorySection>
+              );
+            })}
+        </div>
+
         <div className="w-full flex flex-col gap-8 max-w-[80%]">
           <div className="relative flex justify-center items-center my-4">
             <div className="h-[1px] w-full border-t border-dashed border-gray-600/50" />

@@ -5,7 +5,8 @@
   --foreground: #171717;
   --primary-green: #78be43;
   --primary-blue: #00a880;
-  --hbl-green: #006429;
+  --hbl-green: #78be43;
+  --hbl-green2: #006429;
   --white: #ffffffe6;
 }
 
@@ -15,7 +16,7 @@
 }
 
 @theme {
-  --color-hbl-green: #006429;
+  --color-hbl-green: #78be43;
   --color-background: #ffffffe6;
   --color-primary-green: #78be43;
 }
