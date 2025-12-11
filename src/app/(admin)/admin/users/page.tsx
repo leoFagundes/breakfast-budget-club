@@ -5,6 +5,7 @@ import UserRepository from "@/services/repositories/UserRepository";
 import { UserType } from "@/app/types";
 import { Trash2, Loader2 } from "lucide-react";
 import { getCookie } from "cookies-next";
+import { auth } from "@/services/firebaseConfig";
 
 export default function Users() {
   const [users, setUsers] = useState<UserType[]>([]);
@@ -14,8 +15,8 @@ export default function Users() {
   async function load() {
     setLoading(true);
 
-    const id = getCookie("admin_user") as string;
-    const me = await UserRepository.getById(id);
+    const uid = auth.currentUser?.uid;
+    const me = uid ? await UserRepository.getById(uid) : null;
     setCurrentUser(me || null);
 
     const list = await UserRepository.getAll();
@@ -24,10 +25,38 @@ export default function Users() {
     setLoading(false);
   }
 
-  async function changeRole(id: string, role: UserType["role"]) {
-    if (currentUser?.role !== "owner") return;
-    await UserRepository.updateRole(id, role);
-    load();
+  async function changeRole(id: string, newRole: UserType["role"]) {
+    if (!currentUser) return;
+
+    const me = currentUser;
+    const target = users.find((u) => u.id === id);
+    if (!target) return;
+
+    // OWNER pode tudo
+    if (me.role === "owner") {
+      await UserRepository.updateRole(id, newRole);
+      return load();
+    }
+
+    // ADMIN só pode editar guests
+    if (me.role === "admin") {
+      if (target.role !== "guest") {
+        alert("Admins só podem alterar usuários guest.");
+        return;
+      }
+
+      // Admins não podem promover ninguém a owner
+      if (newRole === "owner") {
+        alert("Admins não podem definir usuários como owner.");
+        return;
+      }
+
+      await UserRepository.updateRole(id, newRole);
+      return load();
+    }
+
+    // Guest não pode alterar nada
+    alert("Você não tem permissão para alterar usuários.");
   }
 
   async function remove(id: string) {
@@ -66,41 +95,49 @@ export default function Users() {
           </thead>
 
           <tbody>
-            {users.map((u) => (
-              <tr key={u.id} className="border-t">
-                <td className="p-3">{u.name}</td>
-                <td className="p-3">{u.email}</td>
+            {users.map((u) => {
+              const canEdit =
+                currentUser?.role === "owner" ||
+                (currentUser?.role === "admin" && u.role === "guest");
 
-                <td className="p-3">
-                  <select
-                    value={u.role}
-                    disabled={!isOwner}
-                    onChange={(e) =>
-                      changeRole(u.id, e.target.value as UserType["role"])
-                    }
-                    className={`border rounded py-1 px-2 cursor-pointer ${
-                      !isOwner ? "opacity-50 cursor-not-allowed" : ""
-                    }`}
-                  >
-                    <option value="owner">Owner</option>
-                    <option value="admin">Admin</option>
-                    <option value="guest">Guest</option>
-                  </select>
-                </td>
+              const canDelete = currentUser?.role === "owner";
 
-                <td className="p-3 flex items-center gap-2">
-                  <button
-                    disabled={!isOwner}
-                    onClick={() => remove(u.id)}
-                    className={`text-red-600 hover:text-red-800 cursor-pointer ${
-                      !isOwner ? "opacity-50 cursor-not-allowed" : ""
-                    }`}
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </td>
-              </tr>
-            ))}
+              return (
+                <tr key={u.id} className="border-t">
+                  <td className="p-3">{u.name}</td>
+                  <td className="p-3">{u.email}</td>
+
+                  <td className="p-3">
+                    <select
+                      value={u.role}
+                      disabled={!canEdit}
+                      onChange={(e) =>
+                        changeRole(u.id, e.target.value as UserType["role"])
+                      }
+                      className={`border rounded py-1 px-2 cursor-pointer ${
+                        !canEdit ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
+                    >
+                      <option value="owner">Owner</option>
+                      <option value="admin">Admin</option>
+                      <option value="guest">Guest</option>
+                    </select>
+                  </td>
+
+                  <td className="p-3 flex items-center gap-2">
+                    <button
+                      disabled={!canDelete}
+                      onClick={() => remove(u.id)}
+                      className={`text-red-600 hover:text-red-800 cursor-pointer ${
+                        !canDelete ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

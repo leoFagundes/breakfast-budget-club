@@ -9,8 +9,12 @@ import CardFileUploader from "@/app/(admin)/admin/cards/CardFileUploader";
 import { isLoggedIn } from "@/utils/auth";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Trash, Undo } from "lucide-react";
+import { UserType } from "@/app/types";
+import { auth } from "@/services/firebaseConfig";
+import UserRepository from "@/services/repositories/UserRepository";
 
 export default function CardPage({ params }: any) {
+  const [currentUser, setCurrentUser] = useState<UserType | null>(null);
   const { id } = use(params) as { id: string };
 
   const route = useRouter();
@@ -33,6 +37,22 @@ export default function CardPage({ params }: any) {
   useEffect(() => {
     load();
   }, [id]);
+
+  useEffect(() => {
+    async function loadUser() {
+      const uid = auth.currentUser?.uid;
+      if (!uid) return;
+
+      const user = await UserRepository.getById(uid);
+      setCurrentUser(user);
+    }
+
+    loadUser();
+  }, []);
+
+  const isGuest = currentUser?.role === "guest";
+  const isAdmin =
+    currentUser?.role === "admin" || currentUser?.role === "owner";
 
   if (loading)
     return (
@@ -57,13 +77,20 @@ export default function CardPage({ params }: any) {
           <h1 className="text-3xl font-bold text-gray-800">{card.title}</h1>
         </div>
 
-        {logged && (
+        {logged && currentUser && !isGuest && (
           <div className="flex flex-col gap-2 border p-4 rounded border-dashed border-hbl-green mt-6 max-w-100">
             <span className="font-semibold text-hbl-green">
               Área visível apenas para usuários administradores
             </span>
 
             <CardFileUploader cardId={id} onUploaded={load} />
+          </div>
+        )}
+        {logged && isGuest && (
+          <div className="flex flex-col gap-2 border p-4 rounded border-gray-400 mt-6">
+            <span className="font-semibold text-gray-500">
+              Sua conta não tem permissão — envio de arquivos desabilitado.
+            </span>
           </div>
         )}
       </div>
@@ -146,7 +173,7 @@ export default function CardPage({ params }: any) {
                     </a>
 
                     {/* Botão EXCLUIR – só aparece para admins */}
-                    {logged && (
+                    {logged && !isGuest && (
                       <button
                         onClick={async () => {
                           if (

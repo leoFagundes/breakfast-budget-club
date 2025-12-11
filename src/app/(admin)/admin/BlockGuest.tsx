@@ -15,20 +15,30 @@ export default function BlockGuest({
 
   useEffect(() => {
     async function loadUser() {
-      const cookie = getCookie("admin_user");
-      if (!cookie) {
+      const raw = getCookie("admin_user");
+
+      if (!raw || typeof raw !== "string") {
         setLoading(false);
         return;
       }
 
-      try {
-        const parsed = JSON.parse(cookie as string) as { id: string };
-        const userFromDB = await UserRepository.getById(parsed.id);
+      let parsed: { id: string } | null = null;
 
-        setUser(userFromDB);
-      } catch (err) {
-        console.error("Erro ao carregar role do usuário:", err);
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        setLoading(false);
+        return;
       }
+
+      if (!parsed?.id) {
+        setLoading(false);
+        return;
+      }
+
+      const userFromDB = await UserRepository.getById(parsed.id);
+      setUser(userFromDB);
+      setLoading(false);
 
       setLoading(false);
     }
