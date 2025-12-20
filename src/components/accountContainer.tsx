@@ -24,6 +24,8 @@ export default function AccountContainer() {
     window.location.reload();
   }
 
+  if (!isLogged) return <></>;
+
   return (
     <div
       className={`flex items-center fixed ${distanceTop} ${

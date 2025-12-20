@@ -8,7 +8,7 @@ import CardFilesRepository from "@/services/repositories/CardFilesRepository";
 import CardFileUploader from "@/app/(admin)/admin/cards/CardFileUploader";
 import { isLoggedIn } from "@/utils/auth";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Trash } from "lucide-react";
+import { ArrowLeft, Trash, Undo } from "lucide-react";
 import { UserType } from "@/app/types";
 import { auth } from "@/services/firebaseConfig";
 import UserRepository from "@/services/repositories/UserRepository";
@@ -37,6 +37,8 @@ export default function CardPage({ params }: any) {
   useEffect(() => {
     load();
   }, [id]);
+
+  console.log(currentUser);
 
   useEffect(() => {
     const unsub = auth.onAuthStateChanged(async (user) => {
@@ -85,7 +87,7 @@ export default function CardPage({ params }: any) {
             {card.title}
           </h1>
 
-          {isAdmin && (
+          {logged && isAdmin && (
             <span className="ml-auto text-xs px-3 py-1 rounded-full bg-hbl-green/10 text-hbl-green font-semibold">
               ADMIN
             </span>
