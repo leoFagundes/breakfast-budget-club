@@ -23,13 +23,16 @@ export interface CategoryType {
   updatedAt?: string;
 }
 
+export type CardActionType = "external" | "internal" | "modal";
+
 export interface CardType {
   id: string;
   categoryId: string;
   title: string;
   actionLabel: string;
+  actionType: CardActionType;
   actionUrl?: string;
-  internalPage?: boolean;
+  modalFileUrl?: string;
   order: number;
   createdAt: string;
 }

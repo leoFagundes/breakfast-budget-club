@@ -20,6 +20,8 @@ export default function Home() {
   const [grouped, setGrouped] = useState<
     { category: CategoryType; items: CardType[] }[]
   >([]);
+  const [dynamicModalOpen, setDynamicModalOpen] = useState(false);
+  const [modalContentUrl, setModalContentUrl] = useState<string | null>(null);
 
   const [welcomeVideoOpen, setWelcomeVideoOpen] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -171,10 +173,17 @@ export default function Home() {
                       src={card.actionUrl}
                       icon={<FaArrowRightFromBracket />}
                       onClick={() => {
-                        if (card.internalPage) {
+                        if (card.actionType === "internal") {
                           window.location.href = `/cards/${card.id}`;
-                        } else if (card.actionUrl) {
+                        }
+
+                        if (card.actionType === "external" && card.actionUrl) {
                           window.open(card.actionUrl, "_blank");
+                        }
+
+                        if (card.actionType === "modal" && card.modalFileUrl) {
+                          setModalContentUrl(card.modalFileUrl);
+                          setDynamicModalOpen(true);
                         }
                       }}
                     />
@@ -296,6 +305,27 @@ export default function Home() {
         </div>
       </section>
       <Modal
+        isOpen={dynamicModalOpen}
+        onClose={() => {
+          setDynamicModalOpen(false);
+          setModalContentUrl(null);
+        }}
+      >
+        {modalContentUrl && (
+          <div className="relative w-full max-w-[600px] aspect-video my-6 shadow-card rounded-sm overflow-hidden">
+            <iframe
+              src={modalContentUrl}
+              allow="autoplay; encrypted-media"
+              referrerPolicy="strict-origin-when-cross-origin"
+              allowFullScreen
+              className="absolute top-0 left-0 w-full h-full rounded-sm"
+              onContextMenu={(e) => e.preventDefault()}
+            />
+          </div>
+        )}
+      </Modal>
+
+      {/* <Modal
         isOpen={welcomeVideoOpen}
         onClose={() => setWelcomeVideoOpen(false)}
       >
@@ -310,7 +340,7 @@ export default function Home() {
             onContextMenu={(e) => e.preventDefault()}
           />
         </div>
-      </Modal>
+      </Modal> */}
     </div>
   );
 }

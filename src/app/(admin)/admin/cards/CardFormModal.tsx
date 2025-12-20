@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import CardRepository from "@/services/repositories/CardRepository";
 import CategoryRepository from "@/services/repositories/CategoryRepository";
 
-import { CardType, CategoryType } from "@/app/types";
+import { CardActionType, CardType, CategoryType } from "@/app/types";
 
 import { Plus, X } from "lucide-react";
 import { useAlert } from "@/app/context/alertContext";
@@ -21,8 +21,13 @@ export default function CardFormModal({
   const [title, setTitle] = useState(card?.title || "");
   const [categoryId, setCategoryId] = useState(card?.categoryId || "");
   const [actionLabel, setActionLabel] = useState(card?.actionLabel || "");
+  const [actionType, setActionType] = useState<CardActionType>(
+    card?.actionType || "external"
+  );
+
   const [actionUrl, setActionUrl] = useState(card?.actionUrl || "");
-  const [internalPage, setInternalPage] = useState(card?.internalPage || false);
+  const [modalFileUrl, setModalFileUrl] = useState(card?.modalFileUrl || "");
+
   const [order, setOrder] = useState(card?.order ?? 0);
 
   // Categorias
@@ -86,19 +91,21 @@ export default function CardFormModal({
     if (!actionLabel.trim())
       return showAlert("O texto do botão é obrigatório", "error");
 
-    if (!internalPage && !actionUrl.trim()) {
-      return showAlert(
-        "Como o link interno está desabilitado, você precisa informar um link externo.",
-        "warning"
-      );
+    if (actionType === "external" && !actionUrl.trim()) {
+      return showAlert("Informe o link externo", "error");
+    }
+
+    if (actionType === "modal" && !modalFileUrl.trim()) {
+      return showAlert("Informe o arquivo do modal", "error");
     }
 
     const payload = {
       title,
       categoryId,
       actionLabel,
-      actionUrl: actionUrl || "",
-      internalPage,
+      actionType,
+      actionUrl: actionType === "external" ? actionUrl : "",
+      modalFileUrl: actionType === "modal" ? modalFileUrl : "",
       order,
       createdAt: card?.createdAt || new Date().toISOString(),
     };
@@ -116,7 +123,7 @@ export default function CardFormModal({
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl p-6 w-full max-w-md relative shadow-xl">
+      <div className="bg-white rounded-xl p-6 w-full max-w-md relative shadow-xl max-h-[90%] overflow-y-auto">
         <button
           onClick={onClose}
           className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 cursor-pointer"
@@ -180,28 +187,83 @@ export default function CardFormModal({
             />
           </div>
 
-          {/* LINK EXTERNO */}
-          <div>
-            <label className="block text-sm font-medium">
-              Link externo (opcional)
+          <div className="flex flex-col gap-2 border rounded p-4 border-dashed shadow-sm">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={actionType === "external"}
+                onChange={() => setActionType("external")}
+              />
+              Abrir página externa
             </label>
-            <input
-              className="w-full border border-gray-300 rounded-md p-2 mt-1"
-              value={actionUrl}
-              onChange={(e) => setActionUrl(e.target.value)}
-              placeholder="https://..."
-            />
-          </div>
+            {actionType === "external" && (
+              <div>
+                <label className="block text-sm font-medium">
+                  Link externo
+                </label>
+                <input
+                  className="w-full border border-gray-300 rounded-md p-2 mt-1"
+                  value={actionUrl}
+                  onChange={(e) => setActionUrl(e.target.value)}
+                  placeholder="https://..."
+                  required
+                />
+              </div>
+            )}
 
-          {/* PÁGINA INTERNA */}
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              checked={internalPage}
-              onChange={() => setInternalPage(!internalPage)}
-            />
-            Abrir página interna
-          </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={actionType === "internal"}
+                onChange={() => setActionType("internal")}
+              />
+              Abrir página interna
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={actionType === "modal"}
+                onChange={() => setActionType("modal")}
+              />
+              Abrir modal
+            </label>
+            {actionType === "modal" && (
+              <div className="flex flex-col gap-2">
+                <label className="block text-sm font-medium">
+                  Arquivo do modal (Embed)
+                </label>
+
+                <input
+                  className="w-full border border-gray-300 rounded-md p-2"
+                  value={modalFileUrl}
+                  onChange={(e) => setModalFileUrl(e.target.value)}
+                  placeholder="https://www.youtube.com/embed/VIDEO_ID"
+                  required
+                />
+
+                <div className="text-xs bg-gray-50 border border-dashed rounded-md p-3 text-gray-600">
+                  <p className="font-semibold mb-1">
+                    Como pegar o embed de um vídeo do YouTube:
+                  </p>
+                  <ol className="list-decimal list-inside space-y-1">
+                    <li>Abra o vídeo no YouTube</li>
+                    <li>
+                      Clique em <b>Compartilhar</b>
+                    </li>
+                    <li>
+                      Clique em <b>Incorporar</b>
+                    </li>
+                    <li>
+                      Copie apenas o link que começa com{" "}
+                      <b>https://www.youtube.com/embed/</b>
+                    </li>
+                  </ol>
+                  <p className="mt-2 italic">Não use link normal do YouTube.</p>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* ORDEM */}
           <div>

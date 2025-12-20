@@ -8,7 +8,7 @@ import CardFilesRepository from "@/services/repositories/CardFilesRepository";
 import CardFileUploader from "@/app/(admin)/admin/cards/CardFileUploader";
 import { isLoggedIn } from "@/utils/auth";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Trash, Undo } from "lucide-react";
+import { ArrowLeft, Trash } from "lucide-react";
 import { UserType } from "@/app/types";
 import { auth } from "@/services/firebaseConfig";
 import UserRepository from "@/services/repositories/UserRepository";
@@ -71,36 +71,48 @@ export default function CardPage({ params }: any) {
     );
 
   return (
-    <div className="max-w-4xl mx-auto p-6 flex flex-col gap-2">
-      <div className="bg-white p-2 rounded-xl">
-        <div className="flex items-center gap-2">
-          <ArrowLeft onClick={() => route.back()} className="cursor-pointer" />
+    <div className="max-w-6xl mx-auto px-4 py-6 flex flex-col gap-6">
+      <header className="bg-white rounded-xl shadow-sm p-5 flex flex-col gap-4">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => route.back()}
+            className="p-2 rounded-full hover:bg-gray-100 transition"
+          >
+            <ArrowLeft />
+          </button>
 
-          <h1 className="text-3xl font-bold text-gray-800">{card.title}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
+            {card.title}
+          </h1>
+
+          {isAdmin && (
+            <span className="ml-auto text-xs px-3 py-1 rounded-full bg-hbl-green/10 text-hbl-green font-semibold">
+              ADMIN
+            </span>
+          )}
         </div>
 
         {logged && currentUser && !isGuest && (
-          <div className="flex flex-col gap-2 border p-4 rounded border-dashed border-hbl-green mt-6 max-w-100">
-            <span className="font-semibold text-hbl-green">
-              Área visível apenas para usuários administradores
-            </span>
-
+          <div className="border border-dashed border-hbl-green rounded-lg p-4 bg-hbl-green/5">
+            <p className="text-sm font-semibold text-hbl-green mb-3">
+              Área administrativa
+            </p>
             <CardFileUploader cardId={id} onUploaded={load} />
           </div>
         )}
+
         {logged && isGuest && (
-          <div className="flex flex-col gap-2 border p-4 rounded border-gray-400 mt-6">
-            <span className="font-semibold text-gray-500">
-              Sua conta não tem permissão — envio de arquivos desabilitado.
-            </span>
+          <div className="border rounded-lg p-4 bg-gray-50 text-sm text-gray-500">
+            Sua conta não possui permissão para envio de arquivos.
           </div>
         )}
-      </div>
-      <div className="bg-white p-2">
+      </header>
+
+      <section className="bg-white rounded-xl shadow-sm p-5">
         {files.length === 0 ? (
-          <p className="text-gray-500 mt-3">Nenhum arquivo enviado.</p>
+          <p className="text-gray-500 text-sm">Nenhum arquivo enviado ainda.</p>
         ) : (
-          <ul className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {files.map((file) => {
               const lower = file.name.toLowerCase();
 
@@ -126,70 +138,63 @@ export default function CardPage({ params }: any) {
               return (
                 <li
                   key={file.id}
-                  className="p-4 rounded-lg border border-gray-300 bg-gray-50 hover:bg-gray-100 transition shadow-sm flex flex-col gap-3"
+                  className="rounded-lg border bg-gray-50 hover:shadow-md transition flex flex-col overflow-hidden"
                 >
-                  <span>{file.name}</span>
-                  {/* PREVIEW */}
-                  {isImage && (
-                    <img
-                      src={file.url}
-                      alt={file.name}
-                      className="w-full h-100 object-cover rounded-md border"
-                    />
-                  )}
-                  {isPDF && (
-                    <iframe
-                      src={file.url}
-                      className="w-full h-100 rounded-md border"
-                    ></iframe>
-                  )}
-                  {isVideo && (
-                    <video
-                      src={file.url}
-                      controls
-                      className="w-full h-100 rounded-md border object-cover"
-                    />
-                  )}
-                  {isAudio && (
-                    <audio controls className="w-full">
-                      <source src={file.url} />
-                    </audio>
-                  )}
-                  {!isImage && !isPDF && !isVideo && !isAudio && (
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gray-300 rounded flex items-center justify-center">
-                        📄
-                      </div>
-                      <span className="text-gray-700">{file.name}</span>
-                    </div>
-                  )}
-                  {/* Botões */}
-                  <div className="flex justify-between items-center mt-2">
+                  <div className="p-3 font-medium text-sm truncate">
+                    {file.name}
+                  </div>
+
+                  <div className="h-44 bg-black/5 flex items-center justify-center">
+                    {isImage && (
+                      <img
+                        src={file.url}
+                        alt={file.name}
+                        className="w-full h-full object-cover"
+                      />
+                    )}
+
+                    {isPDF && (
+                      <iframe src={file.url} className="w-full h-full" />
+                    )}
+
+                    {isVideo && (
+                      <video
+                        src={file.url}
+                        controls
+                        className="w-full h-full object-cover"
+                      />
+                    )}
+
+                    {isAudio && (
+                      <audio controls className="w-full px-3">
+                        <source src={file.url} />
+                      </audio>
+                    )}
+
+                    {!isImage && !isPDF && !isVideo && !isAudio && (
+                      <div className="text-4xl">📄</div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 border-t">
                     <a
                       href={file.url}
                       target="_blank"
-                      className="text-hbl-green font-medium underline"
+                      className="text-sm text-hbl-green font-semibold hover:underline"
                     >
-                      Abrir arquivo
+                      Abrir
                     </a>
 
-                    {/* Botão EXCLUIR – só aparece para admins */}
                     {logged && !isGuest && (
                       <button
                         onClick={async () => {
-                          if (
-                            !confirm(
-                              "Tem certeza que deseja excluir este arquivo?"
-                            )
-                          )
-                            return;
-
+                          if (!confirm("Deseja excluir este arquivo?")) return;
                           await CardFilesRepository.delete(id, file);
-                          load(); // recarrega lista
+                          load();
                         }}
-                        className="px-3 py-1 text-red-600 bg-red-100 hover:bg-red-200 rounded-md cursor-pointer"
+                        className="p-2 rounded-md bg-red-100 hover:bg-red-200 text-red-600"
                       >
-                        <Trash size={16} className="text-red-600" />
+                        <Trash size={16} />
                       </button>
                     )}
                   </div>
@@ -198,7 +203,7 @@ export default function CardPage({ params }: any) {
             })}
           </ul>
         )}
-      </div>
+      </section>
     </div>
   );
 }
